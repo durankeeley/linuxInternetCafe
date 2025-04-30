@@ -17,9 +17,9 @@ func AddComputerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := database.DB.Exec(`
-		INSERT INTO computers (hostname, ip_address, ssh_port, ssh_username, ssh_private_key)
-		VALUES (?, ?, ?, ?, ?)
-	`, c.Hostname, c.IPAddress, c.SSHPort, c.SSHUsername, c.SSHPrivateKey)
+		INSERT INTO computers (hostname, ip_address, ssh_port, ssh_username, ssh_private_key, current_password)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, c.Hostname, c.IPAddress, c.SSHPort, c.SSHUsername, c.SSHPrivateKey, c.CurrentPassword)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -55,7 +55,7 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		status := utils.Ping(ip)
+		status := utils.Ping(ip, sshPort)
 
 		computer := map[string]interface{}{
 			"id":       id,
