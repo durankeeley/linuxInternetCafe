@@ -61,7 +61,7 @@ func UnlockComputer(computer models.Computer) error {
 	log.Println("[info] Running unlock command via SSH...")
 	var b bytes.Buffer
 	session.Stdout = &b
-	err = session.Run("sudo loginctl unlock-sessions")
+	err = session.Run("xfce4-screensaver-command --deactivate")
 	if err != nil {
 		log.Println("[error] Failed to run unlock command: %v", err)
 		return err
