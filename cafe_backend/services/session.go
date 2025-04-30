@@ -6,6 +6,7 @@ import (
 	"cafe_backend/utils"
 	"log"
 	"time"
+	"fmt"
 )
 
 func WatchSessions() {
@@ -49,13 +50,15 @@ func WatchSessions() {
 			}
 
 			if remaining <= time.Minute && remaining > 0 {
+				fmt.Printf("[info] %s 1 minute remaining\n", computer.Hostname)
 				err := NotifyComputer(computer, "1 minute remaining!")
 				if err != nil {
-					log.Println("Notify error:", err)
+					log.Println("[warn] Notify error:", err)
 				}
 			} else if remaining <= 0 {
 				// Time expired - log out
 				newPassword := utils.GenerateRandomPassword(12)
+				fmt.Printf("[info] %s session has ended\n", computer.Hostname)
 				err := LogoutComputer(computer, newPassword)
 				if err != nil {
 					log.Println("Logout error:", err)

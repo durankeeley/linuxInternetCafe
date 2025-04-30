@@ -18,6 +18,12 @@ func InitDB() {
 		log.Fatal("Failed to open database:", err)
 	}
 
+	// Enable WAL mode. DB keeps locking
+	_, err = DB.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		log.Fatalf("Failed to enable WAL mode: %v", err)
+	}
+
 	createTables()
 }
 
@@ -44,16 +50,16 @@ func createTables() {
 	);
 	`
 
-	sessionTable := `
-	CREATE TABLE IF NOT EXISTS sessions (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		computer_id INTEGER,
-		start_time DATETIME,
-		end_time DATETIME,
-		status TEXT,
-		FOREIGN KEY (computer_id) REFERENCES computers(id)
-	);
-	`
+	// sessionTable := `
+	// CREATE TABLE IF NOT EXISTS sessions (
+	// 	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	// 	computer_id INTEGER,
+	// 	start_time DATETIME,
+	// 	end_time DATETIME,
+	// 	status TEXT,
+	// 	FOREIGN KEY (computer_id) REFERENCES computers(id)
+	// );
+	// `
 
 	_, err := DB.Exec(userTable)
 	if err != nil {
@@ -65,8 +71,8 @@ func createTables() {
 		log.Fatal("Failed to create computers table:", err)
 	}
 
-	_, err = DB.Exec(sessionTable)
-	if err != nil {
-		log.Fatal("Failed to create sessions table:", err)
-	}
+	// _, err = DB.Exec(sessionTable)
+	// if err != nil {
+	// 	log.Fatal("Failed to create sessions table:", err)
+	// }
 }

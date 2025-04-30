@@ -12,11 +12,11 @@ import (
 )
 
 func connectSSH(computer models.Computer) (*ssh.Client, error) {
-	fmt.Printf("[info] Attempting SSH connection to %s@%s:%d\n", computer.SSHUsername, computer.IPAddress, computer.SSHPort)
+	log.Println("[info] Attempting SSH connection to %s@%s:%d", computer.SSHUsername, computer.IPAddress, computer.SSHPort)
 
 	signer, err := ssh.ParsePrivateKey([]byte(computer.SSHPrivateKey))
 	if err != nil {
-		fmt.Printf("[warn] Failed to parse private key: %v\n", err)
+		log.Println("[warn] Failed to parse private key: %v", err)
 		return nil, err
 	}
 
@@ -30,19 +30,21 @@ func connectSSH(computer models.Computer) (*ssh.Client, error) {
 	}
 
 	address := net.JoinHostPort(computer.IPAddress, fmt.Sprintf("%d", computer.SSHPort))
-	fmt.Printf("[info] Dialing SSH at %s\n", address)
+	log.Println("[info] Dialing SSH at %s", address)
 
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
-		fmt.Printf("[warn] SSH dial failed: %v\n", err)
+		log.Println("[warn] SSH dial failed: %v", err)
 		return nil, err
 	}
 
-	fmt.Println("[success] SSH connection established")
+	log.Println("[success] SSH connection established")
 	return client, nil
 }
 
 func UnlockComputer(computer models.Computer) error {
+	log.Println("[info] Unlocking computer: %s (%s)", computer.Hostname, computer.IPAddress)
+
 	client, err := connectSSH(computer)
 	if err != nil {
 		return err
@@ -51,21 +53,27 @@ func UnlockComputer(computer models.Computer) error {
 
 	session, err := client.NewSession()
 	if err != nil {
+		log.Println("[error] Failed to create SSH session: %v", err)
 		return err
 	}
 	defer session.Close()
 
+	log.Println("[info] Running unlock command via SSH...")
 	var b bytes.Buffer
 	session.Stdout = &b
-	err = session.Run("loginctl unlock-sessions")
+	err = session.Run("sudo loginctl unlock-sessions")
 	if err != nil {
+		log.Println("[error] Failed to run unlock command: %v", err)
 		return err
 	}
-	log.Println("Unlock output:", b.String())
+
+	log.Println("[success] Unlock output: %s", b.String())
 	return nil
 }
 
 func LogoutComputer(computer models.Computer, newPassword string) error {
+	log.Println("[info] Logging out user on: %s (%s)", computer.Hostname, computer.IPAddress)
+
 	client, err := connectSSH(computer)
 	if err != nil {
 		return err
@@ -74,15 +82,27 @@ func LogoutComputer(computer models.Computer, newPassword string) error {
 
 	session, err := client.NewSession()
 	if err != nil {
+		log.Println("[error] Failed to create SSH session: %v", err)
 		return err
 	}
 	defer session.Close()
 
+	log.Println("[info] Running logout command...")
+	cmd := `xfce4-screensaver-command --lock`
+
 	// Logout user and cleanup
-	cmd := `
-		echo 'Changing password...'
-		echo '` + newPassword + `' | passwd --stdin ` + computer.SSHUsername + `
-		loginctl terminate-user ` + computer.SSHUsername + `
-	`
-	return session.Run(cmd)
+	// cmd := `
+	// 	echo 'Changing password...'
+	// 	echo '` + newPassword + `' | passwd --stdin ` + computer.SSHUsername + `
+	// 	loginctl terminate-user ` + computer.SSHUsername + `
+	// `
+
+	err = session.Run(cmd)
+	if err != nil {
+		log.Println("[error] Failed to run logout command: %v", err)
+		return err
+	}
+
+	log.Println("[success] Logout command executed")
+	return nil
 }
