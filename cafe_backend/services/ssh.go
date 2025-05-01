@@ -1,7 +1,7 @@
 package services
 
 import (
-	"bytes"
+	// "bytes"
 	"cafe_backend/models"
 	"fmt"
 	"log"
@@ -42,34 +42,34 @@ func connectSSH(computer models.Computer) (*ssh.Client, error) {
 	return client, nil
 }
 
-func UnlockComputer(computer models.Computer) error {
-	log.Println("[info] Unlocking computer: %s (%s)", computer.Hostname, computer.IPAddress)
+// func UnlockComputer(computer models.Computer) error {
+// 	log.Println("[info] Unlocking computer: %s (%s)", computer.Hostname, computer.IPAddress)
 
-	client, err := connectSSH(computer)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
+// 	client, err := connectSSH(computer)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer client.Close()
 
-	session, err := client.NewSession()
-	if err != nil {
-		log.Println("[error] Failed to create SSH session: %v", err)
-		return err
-	}
-	defer session.Close()
+// 	session, err := client.NewSession()
+// 	if err != nil {
+// 		log.Println("[error] Failed to create SSH session: %v", err)
+// 		return err
+// 	}
+// 	defer session.Close()
 
-	log.Println("[info] Running unlock command via SSH...")
-	var b bytes.Buffer
-	session.Stdout = &b
-	err = session.Run("xfce4-screensaver-command --deactivate")
-	if err != nil {
-		log.Println("[error] Failed to run unlock command: %v", err)
-		return err
-	}
+// 	log.Println("[info] Running unlock command via SSH...")
+// 	var b bytes.Buffer
+// 	session.Stdout = &b
+// 	err = session.Run("xfce4-screensaver-command --deactivate")
+// 	if err != nil {
+// 		log.Println("[error] Failed to run unlock command: %v", err)
+// 		return err
+// 	}
 
-	log.Println("[success] Unlock output: %s", b.String())
-	return nil
-}
+// 	log.Println("[success] Unlock output: %s", b.String())
+// 	return nil
+// }
 
 func LogoutComputer(computer models.Computer, newPassword string) error {
 	log.Println("[info] Logging out user on: %s (%s)", computer.Hostname, computer.IPAddress)
@@ -88,7 +88,8 @@ func LogoutComputer(computer models.Computer, newPassword string) error {
 	defer session.Close()
 
 	log.Println("[info] Running logout command...")
-	cmd := `xfce4-screensaver-command --lock`
+	// cmd := `xfce4-screensaver-command --lock`
+	cmd := `loginctl terminate-user ` + computer.SSHUsername + `
 
 	// Logout user and cleanup
 	// cmd := `
