@@ -1,12 +1,14 @@
-install VNC
+### Setup Device
+
+## install VNC
 
 sudo pacman -Syu x11vnc
 
-Save a edit password
+## Save a edit password
 
 sudo x11vnc -storepasswd yourVNCpasswordHERE /etc/x11vnc.pass
 
-Make systemd service:
+## Make systemd service:
 sudo nano /etc/systemd/system/x11vnc.service
 
 [Unit]
@@ -24,10 +26,21 @@ Restart-sec=2
 WantedBy=multi-user.target
 
 
-
+## Start the service
 
 sudo systemctl daemon-reload
 sudo systemctl start x11vnc
 
-
 sudo systemctl enable x11vnc
+
+### Install Frontend
+
+sudo pacman -Syu nodejs npm
+
+npx create-next-app@latest cafe_frontend --typescript
+
+npx shadcn@latest init
+
+npx shadcn@latest add button card input form label dialog
+
+npm run dev
