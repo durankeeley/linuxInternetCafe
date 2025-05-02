@@ -1,0 +1,130 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+
+interface Computer {
+  id: number
+  hostname: string
+  ip: string
+  ssh_port: number
+  ssh_user: string
+  assigned: string
+  status: string
+  session_expires_at?: string
+}
+
+export default function Dashboard() {
+  const [computers, setComputers] = useState<Computer[]>([])
+  const [sessionDuration, setSessionDuration] = useState<string>('')
+  const [extendDuration, setExtendDuration] = useState<string>('')
+  const [selectedComputer, setSelectedComputer] = useState<number | null>(null)
+
+  const fetchComputers = async () => {
+    const token = localStorage.getItem('token')
+    const res = await fetch('/api/computers', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setComputers(data)
+    }
+  }
+
+  const postWithToken = async (url: string, body: object) => {
+    const token = localStorage.getItem('token')
+    return fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    })
+  }
+
+  const startSession = async () => {
+    if (!selectedComputer || !sessionDuration) return
+    await postWithToken('/api/session/start', {
+      computer_id: selectedComputer,
+      duration_minutes: parseInt(sessionDuration, 10),
+    })
+    setSessionDuration('')
+    fetchComputers()
+  }
+
+  const extendSession = async () => {
+    if (!selectedComputer || !extendDuration) return
+    await postWithToken('/api/session/extend', {
+      computer_id: selectedComputer,
+      duration_minutes: parseInt(extendDuration, 10),
+    })
+    setExtendDuration('')
+    fetchComputers()
+  }
+
+  const endSession = async (id: number) => {
+    await postWithToken('/api/session/end', { computer_id: id })
+    fetchComputers()
+  }
+
+  useEffect(() => {
+    fetchComputers()
+    const interval = setInterval(fetchComputers, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+      {computers.map(c => (
+        <Card key={c.id} className="p-4">
+          <h3 className="text-xl font-bold mb-2">{c.hostname}</h3>
+          <p>Status: {c.status}</p>
+          <p>Assigned: {c.assigned}</p>
+          <p>Session ends: {c.session_expires_at || 'N/A'}</p>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <Button variant="destructive" onClick={() => endSession(c.id)}>
+              End Session
+            </Button>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button onClick={() => setSelectedComputer(c.id)}>Start Session</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <Input
+                  type="number"
+                  placeholder="Minutes"
+                  value={sessionDuration}
+                  onChange={e => setSessionDuration(e.target.value)}
+                />
+                <Button onClick={startSession}>Confirm Start</Button>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button onClick={() => setSelectedComputer(c.id)}>Extend Session</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <Input
+                  type="number"
+                  placeholder="Minutes"
+                  value={extendDuration}
+                  onChange={e => setExtendDuration(e.target.value)}
+                />
+                <Button onClick={extendSession}>Confirm Extend</Button>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </Card>
+      ))}
+    </div>
+  )
+}

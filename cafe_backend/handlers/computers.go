@@ -33,7 +33,7 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	rows, err := database.DB.Query(`
-		SELECT id, hostname, ip_address, ssh_port, ssh_username, current_password, assigned
+		SELECT id, hostname, ip_address, ssh_port, ssh_username, current_password, assigned, session_expires_at
 		FROM computers
 	`)
 	if err != nil {
@@ -49,8 +49,9 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 		var hostname, ip, sshUser string
 		var assigned *string
 		var currentPassword *string
+		var sessionExpiresAt *string
 
-		if err := rows.Scan(&id, &hostname, &ip, &sshPort, &sshUser, &currentPassword, &assigned); err != nil {
+		if err := rows.Scan(&id, &hostname, &ip, &sshPort, &sshUser, &currentPassword, &assigned, &sessionExpiresAt); err != nil {
 			log.Println("Row scan error:", err)
 			continue
 		}
@@ -58,13 +59,14 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 		status := utils.Ping(ip, sshPort)
 
 		computer := map[string]interface{}{
-			"id":       id,
-			"hostname": hostname,
-			"ip":       ip,
-			"ssh_port": sshPort,
-			"ssh_user": sshUser,
-			"assigned": assigned,
-			"status":   status,
+			"id":                 id,
+			"hostname":           hostname,
+			"ip":                 ip,
+			"ssh_port":           sshPort,
+			"ssh_user":           sshUser,
+			"assigned":           assigned,
+			"status":             status,
+			"session_expires_at": sessionExpiresAt,
 		}
 
 		if currentPassword != nil && *currentPassword != "" {
