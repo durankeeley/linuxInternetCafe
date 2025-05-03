@@ -17,9 +17,9 @@ func AddComputerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := database.DB.Exec(`
-		INSERT INTO computers (hostname, ip_address, ssh_port, ssh_username, ssh_private_key, current_password)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, c.Hostname, c.IPAddress, c.SSHPort, c.SSHUsername, c.SSHPrivateKey, c.CurrentPassword)
+		INSERT INTO computers (hostname, ip_address, ssh_port, ssh_username, ssh_private_key, vnc_port, vnc_password, current_password)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, c.Hostname, c.IPAddress, c.SSHPort, c.SSHUsername, c.SSHPrivateKey, c.VNCPort, c.VNCPassword, c.CurrentPassword)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -33,7 +33,7 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	rows, err := database.DB.Query(`
-		SELECT id, hostname, ip_address, ssh_port, ssh_username, current_password, assigned, session_expires_at
+		SELECT id, hostname, ip_address, ssh_port, ssh_username, vnc_port, vnc_password, current_password, assigned, session_expires_at
 		FROM computers
 	`)
 	if err != nil {
@@ -45,13 +45,14 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 	var computers []map[string]interface{}
 
 	for rows.Next() {
-		var id, sshPort int
-		var hostname, ip, sshUser string
+		var id, sshPort, vncPort int
+		var hostname, ip, sshUser, vncPassword string
 		var assigned *string
 		var currentPassword *string
 		var sessionExpiresAt *string
 
-		if err := rows.Scan(&id, &hostname, &ip, &sshPort, &sshUser, &currentPassword, &assigned, &sessionExpiresAt); err != nil {
+
+		if err := rows.Scan(&id, &hostname, &ip, &sshPort, &sshUser, &vncPort, &vncPassword, &currentPassword, &assigned, &sessionExpiresAt); err != nil {
 			log.Println("Row scan error:", err)
 			continue
 		}
@@ -64,6 +65,8 @@ func GetComputersHandler(w http.ResponseWriter, r *http.Request) {
 			"ip":                 ip,
 			"ssh_port":           sshPort,
 			"ssh_user":           sshUser,
+			"vnc_port":			  vncPort,
+			"vnc_password":		  vncPassword,
 			"assigned":           assigned,
 			"status":             status,
 			"session_expires_at": sessionExpiresAt,

@@ -10,13 +10,13 @@ import (
 )
 
 func WatchSessions() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		<-ticker.C
 		rows, err := database.DB.Query(`
-			SELECT id, session_expires_at, hostname, ip_address, ssh_port, ssh_username, ssh_private_key
+			SELECT id, session_expires_at, hostname, ip_address, ssh_port, ssh_username, ssh_private_key, current_password
 			FROM computers
 			WHERE assigned = 'active'
 		`)
@@ -26,12 +26,10 @@ func WatchSessions() {
 		}
 
 		for rows.Next() {
-			var id int
-			var expiresAtStr string
-			var hostname, ip, sshUsername, sshPrivateKey string
-			var sshPort int
+			var id, sshPort int
+			var hostname, ip, sshUsername, sshPrivateKey, expiresAtStr, currentPassword string
 
-			err := rows.Scan(&id, &expiresAtStr, &hostname, &ip, &sshPort, &sshUsername, &sshPrivateKey)
+			err := rows.Scan(&id, &expiresAtStr, &hostname, &ip, &sshPort, &sshUsername, &sshPrivateKey, &currentPassword)
 			if err != nil {
 				log.Println("Error scanning row:", err)
 				continue
@@ -47,6 +45,7 @@ func WatchSessions() {
 				SSHPort:       sshPort,
 				SSHUsername:   sshUsername,
 				SSHPrivateKey: sshPrivateKey,
+				CurrentPassword: currentPassword,
 			}
 
 			if remaining <= time.Minute && remaining > 0 {
@@ -58,14 +57,16 @@ func WatchSessions() {
 			} else if remaining <= 0 {
 				// Time expired - log out
 				newPassword := utils.GenerateRandomPassword(12)
+				//newPassword := "lantabletxp"
 				fmt.Printf("[info] %s session has ended\n", computer.Hostname)
 				err := LogoutComputer(computer, newPassword)
 				if err != nil {
-					log.Println("Logout error:", err)
+					// terminate user will always error
+					//log.Println("[error] Logout error:", err)
 				}
 
 				// Reset DB
-				_, err = database.DB.Exec(`UPDATE computers SET assigned = NULL, current_password = ? WHERE id = ?`, newPassword, id)
+				_, err = database.DB.Exec(`UPDATE computers SET assigned = NULL, session_expires_at = NULL, current_password = ? WHERE id = ?`, newPassword, id)
 				if err != nil {
 					log.Println("DB update error:", err)
 				}

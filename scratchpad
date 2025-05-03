@@ -44,3 +44,8 @@ npx shadcn@latest init
 npx shadcn@latest add button card input form label dialog
 
 npm run dev
+
+### Init frontend on another machine
+
+npm install
+

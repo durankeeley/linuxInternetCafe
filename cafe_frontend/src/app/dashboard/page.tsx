@@ -81,7 +81,7 @@ export default function Dashboard() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ computer_id: id, duration_minutes: duration }),
+      body: JSON.stringify({ computer_id: id, minutes: duration }),
     })
     if (res.ok) {
       if (type === 'start') setStartModalOpen(null)

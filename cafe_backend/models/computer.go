@@ -12,7 +12,9 @@ type Computer struct {
 	SSHPort          int        `json:"ssh_port"`
 	SSHUsername      string     `json:"ssh_username"`
 	SSHPrivateKey    string     `json:"ssh_private_key"`
-	CurrentPassword  *string    `json:"current_password,omitempty"`
+	VNCPort			 int        `json:"vnc_port"`
+	VNCPassword		 string		`json:"vnc_password"`
+	CurrentPassword  string    `json:"current_password,omitempty"`
 	SessionExpiresAt *time.Time `json:"session_expires_at,omitempty"`
 	Assigned         *string    `json:"assigned,omitempty"`
 }
@@ -20,8 +22,8 @@ type Computer struct {
 func GetComputerByID(id int) (Computer, error) {
 	var c Computer
 	row := database.DB.QueryRow(`
-		SELECT id, hostname, ip_address, ssh_port, ssh_username, ssh_private_key, current_password, session_expires_at, assigned
+		SELECT id, hostname, ip_address, ssh_port, ssh_username, ssh_private_key, vnc_port, vnc_password, current_password, session_expires_at, assigned
 		FROM computers WHERE id = ?`, id)
-	err := row.Scan(&c.ID, &c.Hostname, &c.IPAddress, &c.SSHPort, &c.SSHUsername, &c.SSHPrivateKey, &c.CurrentPassword, &c.SessionExpiresAt, &c.Assigned)
+	err := row.Scan(&c.ID, &c.Hostname, &c.IPAddress, &c.SSHPort, &c.SSHUsername, &c.SSHPrivateKey, &c.VNCPort, &c.VNCPassword, &c.CurrentPassword, &c.SessionExpiresAt, &c.Assigned)
 	return c, err
 }

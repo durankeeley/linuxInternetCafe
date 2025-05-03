@@ -10,11 +10,11 @@ import (
 	"cafe_backend/models"
 )
 
-//@TODO remove hard code vncpassword and device password (text)
 func UnlockComputer(computer models.Computer) error {
-	vncPassword := "unlock1"
-	text := "lantabletxp"
-	address := fmt.Sprintf("%s:5900", computer.IPAddress)
+	vncPassword := computer.VNCPassword
+	vncPort := computer.VNCPort
+	text := computer.CurrentPassword
+	address := fmt.Sprintf("%s:%d", computer.IPAddress, vncPort)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return fmt.Errorf("[error] Failed to connect to %s: %v", address, err)
@@ -29,7 +29,6 @@ func UnlockComputer(computer models.Computer) error {
 
 	log.Println("[info] Sending keystrokes to unlock...")
 
-	// Send each character
 	for _, ch := range text {
 		if err := utils.SendVNCKey(conn, true, uint32(ch)); err != nil {
 			return fmt.Errorf("[error] Failed to send key press: %v", err)

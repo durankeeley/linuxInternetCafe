@@ -44,6 +44,8 @@ func createTables() {
 		ssh_port INTEGER DEFAULT 22,
 		ssh_username TEXT,
 		ssh_private_key TEXT,
+		vnc_port INTEGER DEFAULT 5900,
+		vnc_password TEXT,
 		current_password TEXT,
 		session_expires_at DATETIME,
 		assigned TEXT

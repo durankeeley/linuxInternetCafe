@@ -62,17 +62,13 @@ func EndSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = database.DB.Exec(`
-	UPDATE computers
-	SET assigned = null
-	WHERE id = ?
-	`, req.ComputerID)
+	newPassword := utils.GenerateRandomPassword(12)
+	_, err = database.DB.Exec(`UPDATE computers SET assigned = NULL, session_expires_at = NULL, current_password = ? WHERE id = ?`, newPassword, req.ComputerID)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	newPassword := utils.GenerateRandomPassword(12)
 	err = services.LogoutComputer(comp, newPassword)
 
 	json.NewEncoder(w).Encode(map[string]string{"message": "Session ended"})

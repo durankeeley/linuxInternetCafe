@@ -12,11 +12,11 @@ import (
 )
 
 func connectSSH(computer models.Computer) (*ssh.Client, error) {
-	log.Println("[info] Attempting SSH connection to %s@%s:%d", computer.SSHUsername, computer.IPAddress, computer.SSHPort)
+	log.Printf("[info] Attempting SSH connection to %s@%s:%d\n", computer.SSHUsername, computer.IPAddress, computer.SSHPort)
 
 	signer, err := ssh.ParsePrivateKey([]byte(computer.SSHPrivateKey))
 	if err != nil {
-		log.Println("[warn] Failed to parse private key: %v", err)
+		log.Printf("[warn] Failed to parse private key: %v\n", err)
 		return nil, err
 	}
 
@@ -30,11 +30,11 @@ func connectSSH(computer models.Computer) (*ssh.Client, error) {
 	}
 
 	address := net.JoinHostPort(computer.IPAddress, fmt.Sprintf("%d", computer.SSHPort))
-	log.Println("[info] Dialing SSH at %s", address)
+	log.Printf("[info] Dialing SSH at %s\n", address)
 
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
-		log.Println("[warn] SSH dial failed: %v", err)
+		log.Printf("[warn] SSH dial failed: %v\n", err)
 		return nil, err
 	}
 
@@ -72,7 +72,9 @@ func connectSSH(computer models.Computer) (*ssh.Client, error) {
 // }
 
 func LogoutComputer(computer models.Computer, newPassword string) error {
-	log.Println("[info] Logging out user on: %s (%s)", computer.Hostname, computer.IPAddress)
+	currentPassword := computer.CurrentPassword
+	log.Printf(currentPassword)
+	log.Printf("[info] Logging out user on: %s (%s)\n", computer.Hostname, computer.IPAddress)
 
 	client, err := connectSSH(computer)
 	if err != nil {
@@ -82,27 +84,29 @@ func LogoutComputer(computer models.Computer, newPassword string) error {
 
 	session, err := client.NewSession()
 	if err != nil {
-		log.Println("[error] Failed to create SSH session: %v", err)
+		log.Printf("[error] Failed to create SSH session: %v\n", err)
 		return err
 	}
 	defer session.Close()
 
 	log.Println("[info] Running logout command...")
 	// cmd := `xfce4-screensaver-command --lock`
-	cmd := `loginctl terminate-user ` + computer.SSHUsername + `
+	//cmd := `loginctl terminate-user ` + computer.SSHUsername
 
 	// Logout user and cleanup
-	// cmd := `
-	// 	echo 'Changing password...'
-	// 	echo '` + newPassword + `' | passwd --stdin ` + computer.SSHUsername + `
-	// 	loginctl terminate-user ` + computer.SSHUsername + `
-	// `
+	cmd := fmt.Sprintf(`
+	echo -e "%s\n%s\n%s" | (passwd %s) && \
+	loginctl terminate-user %s
+	`, currentPassword, newPassword, newPassword, computer.SSHUsername, computer.SSHUsername)
 
+	log.Println(cmd)
 	err = session.Run(cmd)
-	if err != nil {
-		log.Println("[error] Failed to run logout command: %v", err)
-		return err
-	}
+	// loginctl terminate-user will always error!
+	//
+	// if err != nil {
+	// 	log.Printf("[error] Failed to run logout command: %v\n", err)
+	// 	return err
+	// }
 
 	log.Println("[success] Logout command executed")
 	return nil
